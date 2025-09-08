@@ -162,3 +162,37 @@ def load_meta(limit: Optional[int] = None) -> List[dict]:
             if limit is not None and len(out) >= limit:
                 break
     return out
+    
+# Ленивый итератор по meta.jsonl
+def iter_meta() -> Iterator[dict]:
+    ensure()
+    with open(META_PATH, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                yield json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+# Вернуть (N, D) - число векторов и размерность
+def index_size() -> Tuple[int, int]:
+    arr = load_vecs()
+    if arr.size == 0:
+        try:
+            d = get_embed_dim(None)
+        except RuntimeError:
+            d = 0
+        return (0, int(d))
+    return (int(arr.shape[0]), int(arr.shape[1]))
+
+# Полная очистка индекса
+def clear_index() -> None:
+    if EMB_PATH.exists():
+        EMB_PATH.unlink()
+    if META_PATH.exists():
+        META_PATH.unlink()
+    if CFG_PATH.exists():
+        CFG_PATH.unlink()
+    ensure()
